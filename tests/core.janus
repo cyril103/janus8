@@ -12,10 +12,10 @@ def machineStartsAtProgramAddress() : Unit {
 def immediateLoadAndAddExecute() : Unit {
     val machine : Machine = new Machine(usize(1))
     defer delete machine
-    assertOk[bool, Chip8Error](machine.loadOpcode(uint(24830)))
-    assertOk[bool, Chip8Error](machine.loadOpcode(uint(28677)))
-    assertEqual[byte](machine.memoryByte(usize(512)), byte(96))
-    assertEqual[byte](machine.memoryByte(usize(513)), byte(254))
+    assertOk[bool, Chip8Error](machine.loadOpcode(uint(0x60FE)))
+    assertOk[bool, Chip8Error](machine.loadOpcode(uint(0x7005)))
+    assertEqual[byte](machine.memoryByte(usize(0x200)), byte(0x60))
+    assertEqual[byte](machine.memoryByte(usize(0x201)), byte(0xFE))
     assertOk[bool, Chip8Error](machine.step())
     assertOk[bool, Chip8Error](machine.step())
     assertEqual[byte](machine.register(usize(0)), byte(3))

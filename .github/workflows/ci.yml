@@ -7,21 +7,39 @@ on:
 jobs:
   linux:
     runs-on: ubuntu-latest
+    env:
+      JANUS_REVISION: 8ba74a5f9fd9a5900f4f60347b8aceca73ebe570
     steps:
       - uses: actions/checkout@v4
-      - name: Installer Janus avec l'installateur officiel
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Extraire la révision Janus testée
+        uses: actions/checkout@v4
+        with:
+          repository: cyril103/janus
+          ref: ${{ env.JANUS_REVISION }}
+          path: .janus-source
+      - name: Construire Janus avec les fonctionnalités requises
         run: |
-          curl --proto '=https' --tlsv1.2 -fsSL \
-            https://raw.githubusercontent.com/cyril103/janus/main/scripts/install.sh | sh
-          echo "$HOME/.janus/bin" >> "$GITHUB_PATH"
-      - name: Vérifier la version attendue
-        run: test "$(janus --version)" = "janus 0.10.0"
+          sudo apt-get update
+          sudo apt-get install --yes clang-18 lld-18 llvm-18-dev ninja-build
+          export PATH="/usr/lib/llvm-18/bin:$PATH"
+          cmake -S .janus-source -B .janus-source/build -G Ninja \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang-18 \
+            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
+          cmake --build .janus-source/build --target janus --parallel
+          echo "/usr/lib/llvm-18/bin" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/.janus-source/build" >> "$GITHUB_PATH"
+      - name: Vérifier la provenance du compilateur
+        run: |
+          test "$(git -C .janus-source rev-parse HEAD)" = "$JANUS_REVISION"
+          test "$(janus --version)" = "janus 0.10.0"
       - name: Valider
         run: |
           janus fmt --check
           janus check --all --deny-warnings
           janus test --fail-if-empty
           janus build
+          tests/native_syntax.sh
           tests/smoke.sh

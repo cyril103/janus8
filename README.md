@@ -25,6 +25,7 @@ $JANUS fmt --check
 $JANUS check --all --deny-warnings
 $JANUS test --fail-if-empty
 $JANUS build
+tests/native_syntax.sh
 tests/smoke.sh
 ```
 
@@ -47,6 +48,8 @@ Tout autre encodage retourne `UnsupportedOpcode`. Le dessin reboucle aux bords.
 | modules/classes/enums | séparation cœur/application et erreurs CHIP-8 |
 | `Result`/`Option` | erreurs d'exécution, fichiers et arguments |
 | `Array` | mémoire, registres, pile, touches et pixels |
+| littéraux `0x`/`0b` | opcodes, adresses, masques, fonte et sprites lisibles |
+| opérateurs bit à bit et décalages | décodage, logique, shifts, RNG et dessin natifs |
 | ownership/destructeurs | libération déterministe des tableaux et fichiers |
 | `std.fs`/`std.process`/`std.text` | ROM, CLI, parsing et dump |
 | `/// @test` | tests unitaires natifs isolés |
@@ -56,8 +59,10 @@ Tout autre encodage retourne `UnsupportedOpcode`. Le dessin reboucle aux bords.
 Pas d'affichage interactif, de son ni de cadence 60 Hz : les timers ne sont
 décrémentés que par appel explicite du cœur. Le CLI headless n'injecte pas de
 touches. Les quirks historiques ne sont pas configurables : les shifts utilisent
-VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI utilise
-l'installateur officiel et vérifie explicitement la version 0.10.0.
+VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI construit
+la révision Janus `8ba74a5` qui contient les propositions #205 et #206 : la
+chaîne de version reste `0.10.0`, mais les paquets de la release `v0.10.0` leur
+sont antérieurs. Elle vérifie aussi que Janus8 conserve cette syntaxe native.
 
 ## Licence
 
