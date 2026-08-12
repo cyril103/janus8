@@ -42,4 +42,5 @@ jobs:
           janus test --fail-if-empty
           janus build
           tests/native_syntax.sh
+          tests/native_syntax_mutation.sh
           tests/smoke.sh
