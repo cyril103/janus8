@@ -23,4 +23,5 @@ Constats observés avec le binaire local Janus 0.10.0, sans modification du comp
 - Impact : moyen sans précaution, nul après centralisation dans `unsignedByte`.
 
 Ces comportements sont consignés comme caractéristiques observées, pas comme
-failles du langage.
+failles du langage. Les deux lacunes de syntaxe ont été qualifiées en propositions
+et sont suivies dans [`ISSUE_CANDIDATES.md`](ISSUE_CANDIDATES.md).
