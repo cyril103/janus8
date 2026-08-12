@@ -104,6 +104,25 @@ def integer_literal(value: str) -> int:
     return int(value.replace("_", ""), 0)
 
 
+def uint_predicates(source: str, variable: str) -> list[int]:
+    literals = re.findall(
+        rf"\bif\s+{re.escape(variable)}\s*==\s*uint\("
+        r"(0[xX][0-9a-fA-F_]+|0[bB][01_]+|[0-9][0-9_]*)\)",
+        source,
+    )
+    return [integer_literal(value) for value in literals]
+
+
+def require_family_dispatch(core: str) -> None:
+    families = uint_predicates(core, "family")
+    expected = list(range(1, 16))
+    for value in sorted(set(families)):
+        if families.count(value) > 1:
+            raise ValueError(f"duplicate opcode family branch: uint({value})")
+    if families != expected:
+        raise ValueError(f"unexpected opcode family sequence: {families}")
+
+
 def require_8xy_dispatch(core: str) -> None:
     body = braced_body(
         core,
@@ -164,6 +183,7 @@ def main() -> int:
     )
     for description, pattern in requirements:
         require(core, description, pattern)
+    require_family_dispatch(core)
     require_8xy_dispatch(core)
 
     require(core_tests, "hexadecimal core opcode", r"\buint\(0x60FE\)")
