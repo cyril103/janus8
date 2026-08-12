@@ -21,6 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes clang-18 lld-18 llvm-18-dev ninja-build
+          export PATH="/usr/lib/llvm-18/bin:$PATH"
           cmake -S .janus-source -B .janus-source/build -G Ninja \
             -DBUILD_TESTING=OFF \
             -DCMAKE_BUILD_TYPE=Release \
@@ -28,6 +29,7 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++-18 \
             -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
           cmake --build .janus-source/build --target janus --parallel
+          echo "/usr/lib/llvm-18/bin" >> "$GITHUB_PATH"
           echo "$GITHUB_WORKSPACE/.janus-source/build" >> "$GITHUB_PATH"
       - name: Vérifier la provenance du compilateur
         run: |
