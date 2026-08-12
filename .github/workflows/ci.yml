@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Janus avec l'installateur officiel
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL \
+            https://raw.githubusercontent.com/cyril103/janus/main/scripts/install.sh | sh
+          echo "$HOME/.janus/bin" >> "$GITHUB_PATH"
+      - name: Vérifier la version attendue
+        run: test "$(janus --version)" = "janus 0.10.0"
+      - name: Valider
+        run: |
+          janus fmt --check
+          janus check --all --deny-warnings
+          janus test --fail-if-empty
+          janus build
+          tests/smoke.sh
