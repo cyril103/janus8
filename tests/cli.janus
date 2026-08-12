@@ -1,0 +1,14 @@
+import chip8.app
+import std.testing
+
+/// @test
+def defaultAndExplicitOptionsParse() : Unit {
+    val defaults : RunOptions = defaultOptions()
+    defer delete defaults
+    assertEqual[usize](defaults.cycles, usize(1000))
+    assertFalse(defaults.trace)
+    val parsed : RunOptions = new RunOptions("demo.ch8", usize(12), true, "state.txt", usize(9))
+    defer delete parsed
+    assertEqual[usize](parsed.cycles, usize(12))
+    assertEqual[string](parsed.romPath, "demo.ch8")
+}

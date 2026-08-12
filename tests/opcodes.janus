@@ -1,0 +1,171 @@
+import chip8.core
+import std.testing
+
+private def opcode(machine : Machine, value : uint) : Unit {
+    assertOk[bool, Chip8Error](machine.loadOpcode(value))
+}
+
+private def run(machine : Machine, count : usize) : Unit {
+    var cursor : usize = usize(0)
+    while cursor < count {
+        assertOk[bool, Chip8Error](machine.step())
+        cursor = cursor + usize(1)
+    }
+}
+
+/// @test
+def skipsAndJumps() : Unit {
+    val machine : Machine = new Machine(usize(3))
+    defer delete machine
+    opcode(machine, uint(24577))
+    opcode(machine, uint(12289))
+    opcode(machine, uint(24576))
+    opcode(machine, uint(16386))
+    opcode(machine, uint(24576))
+    opcode(machine, uint(4608))
+    run(machine, usize(4))
+    assertEqual[byte](machine.register(usize(0)), byte(1))
+    assertEqual[uint](machine.programCounter(), uint(512))
+}
+
+/// @test
+def registerAndArithmeticFamilies() : Unit {
+    val machine : Machine = new Machine(usize(3))
+    defer delete machine
+    opcode(machine, uint(24586))
+    opcode(machine, uint(24835))
+    opcode(machine, uint(32784))
+    opcode(machine, uint(32785))
+    opcode(machine, uint(32786))
+    opcode(machine, uint(32787))
+    opcode(machine, uint(32788))
+    opcode(machine, uint(32789))
+    opcode(machine, uint(32790))
+    opcode(machine, uint(32791))
+    opcode(machine, uint(32798))
+    run(machine, usize(11))
+    assertEqual[byte](machine.register(usize(0)), byte(6))
+}
+
+/// @test
+def callReturnAndStackErrors() : Unit {
+    val machine : Machine = new Machine(usize(4))
+    defer delete machine
+    opcode(machine, uint(8708))
+    opcode(machine, uint(4608))
+    opcode(machine, uint(24583))
+    opcode(machine, uint(238))
+    run(machine, usize(4))
+    assertEqual[byte](machine.register(usize(0)), byte(7))
+    assertEqual[usize](machine.stackDepth(), usize(0))
+    val empty : Machine = new Machine(usize(4))
+    defer delete empty
+    opcode(empty, uint(238))
+    assertError[bool, Chip8Error](empty.step())
+}
+
+/// @test
+def timersIndexRandomAndKeyWait() : Unit {
+    val machine : Machine = new Machine(usize(123))
+    defer delete machine
+    opcode(machine, uint(24581))
+    opcode(machine, uint(61461))
+    opcode(machine, uint(61464))
+    opcode(machine, uint(41215))
+    opcode(machine, uint(49392))
+    opcode(machine, uint(61706))
+    run(machine, usize(6))
+    assertEqual[byte](machine.delayTimer(), byte(5))
+    assertEqual[byte](machine.soundTimer(), byte(5))
+    assertEqual[uint](machine.index(), uint(255))
+    assertTrue(machine.waitingForKey())
+    assertOk[bool, Chip8Error](machine.setKey(usize(10), true))
+    assertFalse(machine.waitingForKey())
+    assertEqual[byte](machine.register(usize(1)), byte(10))
+    machine.tickTimers()
+    assertEqual[byte](machine.delayTimer(), byte(4))
+}
+
+/// @test
+def bcdAndRegisterStoreLoad() : Unit {
+    val machine : Machine = new Machine(usize(5))
+    defer delete machine
+    opcode(machine, uint(41216))
+    opcode(machine, uint(24699))
+    opcode(machine, uint(61491))
+    opcode(machine, uint(24577))
+    opcode(machine, uint(24834))
+    opcode(machine, uint(41232))
+    opcode(machine, uint(61781))
+    opcode(machine, uint(24576))
+    opcode(machine, uint(24832))
+    opcode(machine, uint(61797))
+    run(machine, usize(3))
+    assertEqual[byte](machine.memoryByte(usize(256)), byte(1))
+    assertEqual[byte](machine.memoryByte(usize(257)), byte(2))
+    assertEqual[byte](machine.memoryByte(usize(258)), byte(3))
+    run(machine, usize(7))
+    assertEqual[byte](machine.register(usize(0)), byte(1))
+    assertEqual[byte](machine.register(usize(1)), byte(2))
+}
+
+/// @test
+def spriteDrawWrapAndCollision() : Unit {
+    val machine : Machine = new Machine(usize(6))
+    defer delete machine
+    val data : Ptr[byte] = alloc[byte](usize(11))
+    defer free(data)
+    data.store(usize(0), byte(162))
+    data.store(usize(1), byte(10))
+    data.store(usize(2), byte(96))
+    data.store(usize(3), byte(63))
+    data.store(usize(4), byte(97))
+    data.store(usize(5), byte(31))
+    data.store(usize(6), byte(208))
+    data.store(usize(7), byte(17))
+    data.store(usize(8), byte(208))
+    data.store(usize(9), byte(17))
+    data.store(usize(10), byte(192))
+    assertOk[bool, Chip8Error](machine.loadRom(data, usize(11)))
+    run(machine, usize(4))
+    assertTrue(machine.pixel(usize(63), usize(31)))
+    assertTrue(machine.pixel(usize(0), usize(31)))
+    assertEqual[byte](machine.register(usize(15)), byte(0))
+    run(machine, usize(1))
+    assertFalse(machine.pixel(usize(63), usize(31)))
+    assertEqual[byte](machine.register(usize(15)), byte(1))
+}
+
+/// @test
+def boundsUnsupportedAndFont() : Unit {
+    val machine : Machine = new Machine(usize(7))
+    defer delete machine
+    val oversized : Ptr[byte] = alloc[byte](usize(3585))
+    defer free(oversized)
+    assertError[bool, Chip8Error](machine.loadRom(oversized, usize(3585)))
+    opcode(machine, uint(0))
+    assertError[bool, Chip8Error](machine.step())
+    assertEqual[byte](machine.memoryByte(usize(80)), byte(240))
+}
+
+/// @test
+def stackAndMemoryBoundariesAreErrors() : Unit {
+    val stackMachine : Machine = new Machine(usize(8))
+    defer delete stackMachine
+    opcode(stackMachine, uint(8704))
+    var depth : usize = usize(0)
+    while depth < usize(16) {
+        assertOk[bool, Chip8Error](stackMachine.step())
+        depth = depth + usize(1)
+    }
+    assertEqual[usize](stackMachine.stackDepth(), usize(16))
+    assertError[bool, Chip8Error](stackMachine.step())
+
+    val memoryMachine : Machine = new Machine(usize(9))
+    defer delete memoryMachine
+    opcode(memoryMachine, uint(45055))
+    opcode(memoryMachine, uint(24831))
+    opcode(memoryMachine, uint(61491))
+    run(memoryMachine, usize(2))
+    assertError[bool, Chip8Error](memoryMachine.step())
+}

@@ -1,0 +1,148 @@
+module chip8.app
+
+import chip8.core
+import std.fs
+import std.option
+import std.process
+import std.result
+import std.system
+import std.text
+
+class RunOptions(
+val romPath : string,
+val cycles : usize,
+val trace : bool,
+val dumpPath : string,
+val seed : usize
+) {}
+
+def defaultOptions() : RunOptions {
+    return new RunOptions("", usize(1000), false, "", usize(1))
+}
+
+private def argument(index : usize) : string {
+    return match programArgument(index) {
+        Some(value) => value,
+        None => ""
+    }
+}
+
+private def parseSize(text : string) : Option[usize] {
+    return match parseUInt(text) {
+        Ok(value) => Option.Some[usize](usize(value)),
+        Error(_) => Option.None[usize]()
+    }
+}
+
+private def dumpState(machine : Machine, cycles : usize, path : string) : bool {
+    val output : TextBuilder = new TextBuilder()
+    defer delete output
+    output.append("pc=")
+    output.appendUInt(machine.programCounter())
+    output.append("\ni=")
+    output.appendUInt(machine.index())
+    output.append("\ndelay=")
+    output.appendUInt(machine.delayTimerUnsigned())
+    output.append("\nsound=")
+    output.appendUInt(machine.soundTimerUnsigned())
+    output.append("\ncycles=")
+    output.appendUSize(cycles)
+    output.append("\nlit_pixels=")
+    output.appendUSize(machine.litPixelCount())
+    output.append("\nregisters=")
+    var cursor : usize = usize(0)
+    while cursor < usize(16) {
+        if cursor > usize(0) { output.append(",") }
+        output.appendUInt(machine.registerUnsigned(cursor))
+        cursor = cursor + usize(1)
+    }
+    output.append("\n")
+    return match writeTextFileAtomic(path, output.view()) {
+        Ok(_) => true,
+        Error(_) => false
+    }
+}
+
+private def readFailure() : int {
+    println("erreur: lecture de la ROM impossible")
+    return 3
+}
+
+private def executeRom(
+file : FileData,
+cycles : usize,
+trace : bool,
+dumpPath : string,
+seed : usize
+) : int {
+    defer delete file
+    val machine : Machine = new Machine(seed)
+    defer delete machine
+    val accepted : Result[bool, Chip8Error] = machine.loadRom(file.data(), file.size())
+    val loadOk : bool = match accepted { Ok(_) => true, Error(_) => false }
+    if !loadOk { println("erreur: ROM trop grande") return 4 }
+    var executed : usize = usize(0)
+    var failed : bool = false
+    while executed < cycles && !failed {
+        if trace {
+            print("cycle=") print(executed) print(" pc=") print(machine.programCounter())
+            print(" opcode=") println(machine.currentOpcode())
+        }
+        val result : Result[bool, Chip8Error] = machine.step()
+        failed = match result { Ok(_) => false, Error(_) => true }
+        if !failed { executed = executed + usize(1) }
+    }
+    if failed { println("erreur: opcode non supporté ou état invalide") return 5 }
+    if dumpPath != "" && !dumpState(machine, executed, dumpPath) {
+        println("erreur: écriture du dump impossible")
+        return 6
+    }
+    print("cycles=") print(executed) print(" pc=") print(machine.programCounter())
+    print(" lit_pixels=") println(machine.litPixelCount())
+    return 0
+}
+
+def runApplication() : int {
+    var romPath : string = ""
+    var cycles : usize = usize(1000)
+    var trace : bool = false
+    var dumpPath : string = ""
+    var seed : usize = usize(1)
+    var cursor : usize = usize(1)
+    while cursor < programArgumentCount() {
+        val value : string = argument(cursor)
+        if value == "--trace" { trace = true cursor = cursor + usize(1) }
+        else if value == "--cycles" || value == "--seed" || value == "--dump-state" {
+            if cursor + usize(1) >= programArgumentCount() {
+                println("erreur: valeur manquante après option")
+                return 2
+            }
+            val next : string = argument(cursor + usize(1))
+            if value == "--dump-state" { dumpPath = next }
+            else {
+                val parsedSize : Option[usize] = parseSize(next)
+                if isNone[usize](parsedSize) { println("erreur: entier non signé invalide") return 2 }
+                val number : usize = std.option.unwrapOr[usize](parsedSize, usize(0))
+                if value == "--cycles" { cycles = number } else { seed = number }
+            }
+            cursor = cursor + usize(2)
+        }
+        else if value == "--help" {
+            println("usage: janus8 <rom> [--cycles N] [--trace] [--dump-state PATH] [--seed N]")
+            return 0
+        }
+        else if stringLength(value) > usize(0) && stringData(value).load(usize(0)) == byte(45) {
+            println("erreur: option inconnue")
+            return 2
+        }
+        else if romPath == "" { romPath = value cursor = cursor + usize(1) }
+        else { println("erreur: plusieurs ROM fournies") return 2 }
+    }
+    if romPath == "" { println("erreur: ROM requise (utilisez --help)") return 2 }
+
+    val loaded : Result[FileData, SystemError] = readFile(romPath)
+    return match move loaded {
+        Error(_) => readFailure(),
+        Ok(file) => executeRom(move file, cycles, trace, dumpPath, seed)
+    }
+}

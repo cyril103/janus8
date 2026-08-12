@@ -1,4 +1,3 @@
-def main() : int {
-    println("Hello from Janus!")
-    return 0
-}
+import chip8.app
+
+def main() : int { return runApplication() }

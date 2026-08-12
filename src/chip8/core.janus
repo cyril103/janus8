@@ -1,0 +1,377 @@
+module chip8.core
+
+import std.array
+import std.result
+
+enum Chip8Error derives Copy, Equality, Debug {
+    RomTooLarge,
+    MemoryOutOfBounds,
+    StackOverflow,
+    StackUnderflow,
+    UnsupportedOpcode,
+    InvalidRegister
+}
+
+private def unsignedByte(value : byte) : uint {
+    val signed : int = int(value)
+    if signed < 0 { return truncatingCast[uint](signed + 256) }
+    return truncatingCast[uint](signed)
+}
+
+private def byteAnd(left : byte, right : byte) : byte {
+    var a : uint = unsignedByte(left)
+    var b : uint = unsignedByte(right)
+    var place : uint = uint(1)
+    var value : uint = uint(0)
+    while place <= uint(128) {
+        if (a % uint(2)) == uint(1) && (b % uint(2)) == uint(1) {
+            value = value + place
+        }
+        a = a / uint(2)
+        b = b / uint(2)
+        place = place * uint(2)
+    }
+    return truncatingCast[byte](value)
+}
+
+private def byteOr(left : byte, right : byte) : byte {
+    return truncatingCast[byte](unsignedByte(left) + unsignedByte(right) - unsignedByte(byteAnd(left, right)))
+}
+
+private def byteXor(left : byte, right : byte) : byte {
+    return truncatingCast[byte](unsignedByte(byteOr(left, right)) - unsignedByte(byteAnd(left, right)))
+}
+
+private def spriteBit(value : byte, column : usize) : bool {
+    var divisor : uint = uint(128)
+    var cursor : usize = usize(0)
+    while cursor < column { divisor = divisor / uint(2) cursor = cursor + usize(1) }
+    return (unsignedByte(value) / divisor) % uint(2) == uint(1)
+}
+
+private def zeroBytes(size : usize) : Array[byte] {
+    val result : Array[byte] = new Array[byte](size)
+    var cursor : usize = usize(0)
+    while cursor < size { result.push(byte(0)) cursor = cursor + usize(1) }
+    return move result
+}
+
+private def zeroBools(size : usize) : Array[bool] {
+    val result : Array[bool] = new Array[bool](size)
+    var cursor : usize = usize(0)
+    while cursor < size { result.push(false) cursor = cursor + usize(1) }
+    return move result
+}
+
+private def initialMemory() : Array[byte] {
+    val result : Array[byte] = zeroBytes(usize(4096))
+    result.set(usize(80), byte(240))
+    result.set(usize(81), byte(144))
+    result.set(usize(82), byte(144))
+    result.set(usize(83), byte(144))
+    result.set(usize(84), byte(240))
+    result.set(usize(85), byte(32))
+    result.set(usize(86), byte(96))
+    result.set(usize(87), byte(32))
+    result.set(usize(88), byte(32))
+    result.set(usize(89), byte(112))
+    result.set(usize(90), byte(240))
+    result.set(usize(91), byte(16))
+    result.set(usize(92), byte(240))
+    result.set(usize(93), byte(128))
+    result.set(usize(94), byte(240))
+    result.set(usize(95), byte(240))
+    result.set(usize(96), byte(16))
+    result.set(usize(97), byte(240))
+    result.set(usize(98), byte(16))
+    result.set(usize(99), byte(240))
+    result.set(usize(100), byte(144))
+    result.set(usize(101), byte(144))
+    result.set(usize(102), byte(240))
+    result.set(usize(103), byte(16))
+    result.set(usize(104), byte(16))
+    result.set(usize(105), byte(240))
+    result.set(usize(106), byte(128))
+    result.set(usize(107), byte(240))
+    result.set(usize(108), byte(16))
+    result.set(usize(109), byte(240))
+    result.set(usize(110), byte(240))
+    result.set(usize(111), byte(128))
+    result.set(usize(112), byte(240))
+    result.set(usize(113), byte(144))
+    result.set(usize(114), byte(240))
+    result.set(usize(115), byte(240))
+    result.set(usize(116), byte(16))
+    result.set(usize(117), byte(32))
+    result.set(usize(118), byte(64))
+    result.set(usize(119), byte(64))
+    result.set(usize(120), byte(240))
+    result.set(usize(121), byte(144))
+    result.set(usize(122), byte(240))
+    result.set(usize(123), byte(144))
+    result.set(usize(124), byte(240))
+    result.set(usize(125), byte(240))
+    result.set(usize(126), byte(144))
+    result.set(usize(127), byte(240))
+    result.set(usize(128), byte(16))
+    result.set(usize(129), byte(240))
+    result.set(usize(130), byte(240))
+    result.set(usize(131), byte(144))
+    result.set(usize(132), byte(240))
+    result.set(usize(133), byte(144))
+    result.set(usize(134), byte(144))
+    result.set(usize(135), byte(224))
+    result.set(usize(136), byte(144))
+    result.set(usize(137), byte(224))
+    result.set(usize(138), byte(144))
+    result.set(usize(139), byte(224))
+    result.set(usize(140), byte(240))
+    result.set(usize(141), byte(128))
+    result.set(usize(142), byte(128))
+    result.set(usize(143), byte(128))
+    result.set(usize(144), byte(240))
+    result.set(usize(145), byte(224))
+    result.set(usize(146), byte(144))
+    result.set(usize(147), byte(144))
+    result.set(usize(148), byte(144))
+    result.set(usize(149), byte(224))
+    result.set(usize(150), byte(240))
+    result.set(usize(151), byte(128))
+    result.set(usize(152), byte(240))
+    result.set(usize(153), byte(128))
+    result.set(usize(154), byte(240))
+    result.set(usize(155), byte(240))
+    result.set(usize(156), byte(128))
+    result.set(usize(157), byte(240))
+    result.set(usize(158), byte(128))
+    result.set(usize(159), byte(128))
+    return move result
+}
+
+class Machine(seed : usize) {
+    private val memory : Array[byte] = initialMemory()
+    private val registers : Array[byte] = zeroBytes(usize(16))
+    private val stack : Array[uint] = new Array[uint](usize(16))
+    private val pixels : Array[bool] = zeroBools(usize(2048))
+    private val keys : Array[bool] = zeroBools(usize(16))
+    private var indexRegister : uint = uint(0)
+    private var pc : uint = uint(512)
+    private var delay : byte = byte(0)
+    private var sound : byte = byte(0)
+    private var randomState : usize = seed
+    private var waitingRegister : int = -1
+    private var loadAddress : uint = uint(512)
+
+    def programCounter() : uint { return pc }
+    def index() : uint { return indexRegister }
+    def delayTimer() : byte { return delay }
+    def soundTimer() : byte { return sound }
+    def delayTimerUnsigned() : uint { return unsignedByte(delay) }
+    def soundTimerUnsigned() : uint { return unsignedByte(sound) }
+    def stackDepth() : usize { return stack.size() }
+    def waitingForKey() : bool { return waitingRegister >= 0 }
+    def registerUnsigned(index : usize) : uint { return unsignedByte(this.register(index)) }
+
+    def currentOpcode() : uint {
+        if pc > uint(4094) { return uint(0) }
+        return unsignedByte(memory.get(usize(pc))) * uint(256) +
+        unsignedByte(memory.get(usize(pc + uint(1))))
+    }
+
+    def litPixelCount() : usize {
+        var count : usize = usize(0)
+        var cursor : usize = usize(0)
+        while cursor < pixels.size() {
+            if pixels.get(cursor) { count = count + usize(1) }
+            cursor = cursor + usize(1)
+        }
+        return count
+    }
+
+    def register(index : usize) : byte {
+        if index >= usize(16) { return byte(0) }
+        return registers.get(index)
+    }
+
+    def memoryByte(address : usize) : byte {
+        if address >= usize(4096) { return byte(0) }
+        return memory.get(address)
+    }
+
+    def pixel(x : usize, y : usize) : bool {
+        if x >= usize(64) || y >= usize(32) { return false }
+        return pixels.get(y * usize(64) + x)
+    }
+
+    def setKey(key : usize, pressed : bool) : Result[bool, Chip8Error] {
+        if key >= usize(16) {
+            return Result.Error[bool, Chip8Error](Chip8Error.InvalidRegister)
+        }
+        keys.set(key, pressed)
+        if pressed && waitingRegister >= 0 {
+            registers.set(truncatingCast[usize](waitingRegister), truncatingCast[byte](key))
+            waitingRegister = -1
+            pc = pc + uint(2)
+        }
+        return Result.Ok[bool, Chip8Error](true)
+    }
+
+    def loadRom(data : Ptr[byte], size : usize) : Result[bool, Chip8Error] {
+        if size > usize(3584) {
+            return Result.Error[bool, Chip8Error](Chip8Error.RomTooLarge)
+        }
+        var cursor : usize = usize(0)
+        while cursor < size {
+            memory.set(usize(512) + cursor, data.load(cursor))
+            cursor = cursor + usize(1)
+        }
+        pc = uint(512)
+        loadAddress = uint(512) + truncatingCast[uint](size)
+        return Result.Ok[bool, Chip8Error](true)
+    }
+
+    def loadOpcode(opcode : uint) : Result[bool, Chip8Error] {
+        if loadAddress > uint(4094) {
+            return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds)
+        }
+        memory.set(usize(loadAddress), truncatingCast[byte]((opcode / uint(256)) % uint(256)))
+        memory.set(usize(loadAddress + uint(1)), truncatingCast[byte](opcode % uint(256)))
+        loadAddress = loadAddress + uint(2)
+        return Result.Ok[bool, Chip8Error](true)
+    }
+
+    def tickTimers() : Unit {
+        if delay > byte(0) { delay = delay - byte(1) }
+        if sound > byte(0) { sound = sound - byte(1) }
+    }
+
+    private def nextRandomByte() : byte {
+        randomState = randomState * usize(1664525) + usize(1013904223)
+        return truncatingCast[byte]((randomState / usize(256)) % usize(256))
+    }
+
+    private def skipIf(condition : bool) : Unit {
+        pc = pc + uint(2)
+        if condition { pc = pc + uint(2) }
+    }
+
+    def step() : Result[bool, Chip8Error] {
+        if waitingRegister >= 0 { return Result.Ok[bool, Chip8Error](true) }
+        if pc > uint(4094) {
+            return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds)
+        }
+        val opcode : uint = unsignedByte(memory.get(usize(pc))) * uint(256) +
+        unsignedByte(memory.get(usize(pc + uint(1))))
+        val family : uint = opcode / uint(4096)
+        val x : usize = usize((opcode / uint(256)) % uint(16))
+        val y : usize = usize((opcode / uint(16)) % uint(16))
+        val nn : byte = truncatingCast[byte](opcode % uint(256))
+        val nnn : uint = opcode % uint(4096)
+        val n : usize = usize(opcode % uint(16))
+
+        if opcode == uint(224) {
+            var cursor : usize = usize(0)
+            while cursor < pixels.size() { pixels.set(cursor, false) cursor = cursor + usize(1) }
+            pc = pc + uint(2)
+            return Result.Ok[bool, Chip8Error](true)
+        }
+        if opcode == uint(238) {
+            if stack.isEmpty() { return Result.Error[bool, Chip8Error](Chip8Error.StackUnderflow) }
+            pc = stack.pop() + uint(2)
+            return Result.Ok[bool, Chip8Error](true)
+        }
+        if family == uint(1) { pc = nnn return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(2) {
+            if stack.size() >= usize(16) { return Result.Error[bool, Chip8Error](Chip8Error.StackOverflow) }
+            stack.push(pc) pc = nnn return Result.Ok[bool, Chip8Error](true)
+        }
+        if family == uint(3) { this.skipIf(registers.get(x) == nn) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(4) { this.skipIf(registers.get(x) != nn) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(5) && (opcode % uint(16)) == uint(0) { this.skipIf(registers.get(x) == registers.get(y)) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(6) { registers.set(x, nn) pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(7) { registers.set(x, truncatingCast[byte]((unsignedByte(registers.get(x)) + unsignedByte(nn)) % uint(256))) pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(8) {
+            val sub : uint = opcode % uint(16)
+            val vx : byte = registers.get(x)
+            val vy : byte = registers.get(y)
+            if sub == uint(0) { registers.set(x, vy) }
+            else if sub == uint(1) { registers.set(x, byteOr(vx, vy)) }
+            else if sub == uint(2) { registers.set(x, byteAnd(vx, vy)) }
+            else if sub == uint(3) { registers.set(x, byteXor(vx, vy)) }
+            else if sub == uint(4) { val sum : uint = unsignedByte(vx) + unsignedByte(vy) registers.set(x, truncatingCast[byte](sum % uint(256))) registers.set(usize(15), byte(sum > uint(255))) }
+            else if sub == uint(5) { registers.set(usize(15), byte(unsignedByte(vx) >= unsignedByte(vy))) registers.set(x, truncatingCast[byte]((unsignedByte(vx) + uint(256) - unsignedByte(vy)) % uint(256))) }
+            else if sub == uint(6) { registers.set(usize(15), truncatingCast[byte](unsignedByte(vx) % uint(2))) registers.set(x, truncatingCast[byte](unsignedByte(vx) / uint(2))) }
+            else if sub == uint(7) { registers.set(usize(15), byte(unsignedByte(vy) >= unsignedByte(vx))) registers.set(x, truncatingCast[byte]((unsignedByte(vy) + uint(256) - unsignedByte(vx)) % uint(256))) }
+            else if sub == uint(14) { registers.set(usize(15), byte(unsignedByte(vx) >= uint(128))) registers.set(x, truncatingCast[byte]((unsignedByte(vx) * uint(2)) % uint(256))) }
+            else { return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode) }
+            pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true)
+        }
+        if family == uint(9) && (opcode % uint(16)) == uint(0) { this.skipIf(registers.get(x) != registers.get(y)) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(10) { indexRegister = nnn pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(11) { pc = unsignedByte(registers.get(usize(0))) + nnn return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(12) { registers.set(x, byteAnd(this.nextRandomByte(), nn)) pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true) }
+        if family == uint(13) {
+            if indexRegister + truncatingCast[uint](n) > uint(4096) { return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds) }
+            registers.set(usize(15), byte(0))
+            var row : usize = usize(0)
+            while row < n {
+                val sprite : byte = memory.get(usize(indexRegister) + row)
+                var column : usize = usize(0)
+                while column < usize(8) {
+                    if spriteBit(sprite, column) {
+                        val px : usize = (usize(unsignedByte(registers.get(x))) + column) % usize(64)
+                        val py : usize = (usize(unsignedByte(registers.get(y))) + row) % usize(32)
+                        val position : usize = py * usize(64) + px
+                        if pixels.get(position) { registers.set(usize(15), byte(1)) }
+                        pixels.set(position, !pixels.get(position))
+                    }
+                    column = column + usize(1)
+                }
+                row = row + usize(1)
+            }
+            pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true)
+        }
+        if family == uint(14) {
+            val low : uint = opcode % uint(256)
+            if low == uint(158) { this.skipIf(keys.get(usize(unsignedByte(registers.get(x))) % usize(16))) return Result.Ok[bool, Chip8Error](true) }
+            if low == uint(161) { this.skipIf(!keys.get(usize(unsignedByte(registers.get(x))) % usize(16))) return Result.Ok[bool, Chip8Error](true) }
+        }
+        if family == uint(15) {
+            val low : uint = opcode % uint(256)
+            if low == uint(7) { registers.set(x, delay) }
+            else if low == uint(10) { waitingRegister = truncatingCast[int](x) return Result.Ok[bool, Chip8Error](true) }
+            else if low == uint(21) { delay = registers.get(x) }
+            else if low == uint(24) { sound = registers.get(x) }
+            else if low == uint(30) { indexRegister = indexRegister + unsignedByte(registers.get(x)) }
+            else if low == uint(41) { indexRegister = uint(80) + unsignedByte(registers.get(x)) % uint(16) * uint(5) }
+            else if low == uint(51) {
+                if indexRegister > uint(4093) { return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds) }
+                val value : byte = registers.get(x)
+                memory.set(usize(indexRegister), truncatingCast[byte](unsignedByte(value) / uint(100)))
+                memory.set(usize(indexRegister + uint(1)), truncatingCast[byte]((unsignedByte(value) / uint(10)) % uint(10)))
+                memory.set(usize(indexRegister + uint(2)), truncatingCast[byte](unsignedByte(value) % uint(10)))
+            }
+            else if low == uint(85) {
+                if indexRegister + truncatingCast[uint](x) >= uint(4096) { return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds) }
+                var cursor : usize = usize(0)
+                while cursor <= x { memory.set(usize(indexRegister) + cursor, registers.get(cursor)) cursor = cursor + usize(1) }
+            }
+            else if low == uint(101) {
+                if indexRegister + truncatingCast[uint](x) >= uint(4096) { return Result.Error[bool, Chip8Error](Chip8Error.MemoryOutOfBounds) }
+                var cursor : usize = usize(0)
+                while cursor <= x { registers.set(cursor, memory.get(usize(indexRegister) + cursor)) cursor = cursor + usize(1) }
+            }
+            else { return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode) }
+            pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true)
+        }
+        return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode)
+    }
+
+    destructor {
+        delete memory
+        delete registers
+        delete stack
+        delete pixels
+        delete keys
+    }
+}
