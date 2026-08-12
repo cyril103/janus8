@@ -26,6 +26,7 @@ $JANUS check --all --deny-warnings
 $JANUS test --fail-if-empty
 $JANUS build
 tests/native_syntax.sh
+tests/native_syntax_mutation.sh
 tests/smoke.sh
 ```
 
