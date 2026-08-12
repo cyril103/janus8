@@ -3,21 +3,19 @@
 Janus8 transforme uniquement les limitations reproductibles et suffisamment
 spécifiées en issues du langage Janus.
 
-## Issues ouvertes
+## Issues fermées et adoptées
 
-### [Janus #205 — littéraux entiers hexadécimaux et binaires](https://github.com/cyril103/janus/issues/205)
+### [Janus #205 — littéraux entiers hexadécimaux et binaires](https://github.com/cyril103/janus/issues/205) — fermée
 
-Le code d’émulation manipule des adresses, opcodes, masques et sprites. Janus
-0.10.0 impose leur notation décimale : `uint(41482)` remplace par exemple
-`uint(0xA20A)`. L’issue propose `0x`/`0b`, les séparateurs `_`, des diagnostics
-dédiés et la parité entre analyse, évaluation constante et exécution.
+Janus fournit désormais `0x`/`0b` et les séparateurs `_`. Janus8 a adopté cette
+syntaxe dans les opcodes et dans les données binaires lisibles, par exemple
+`uint(0xA20A)` et `byte(0b1111_0000)`.
 
-### [Janus #206 — opérateurs entiers bit à bit et de décalage](https://github.com/cyril103/janus/issues/206)
+### [Janus #206 — opérateurs entiers bit à bit et de décalage](https://github.com/cyril103/janus/issues/206) — fermée
 
-Janus8 doit actuellement reconstruire AND, OR, XOR, extraction de bits et
-décalages avec divisions, modulos et boucles. L’issue propose `&`, `|`, `^`,
-`<<` et `>>`, une sémantique définie aux frontières de largeur et une parité
-compile-time/runtime sans poison LLVM.
+Janus fournit désormais `&`, `|`, `^`, `<<` et `>>`. Janus8 les emploie pour le
+décodage d'opcode, OR/AND/XOR, les shifts CHIP-8, le masque aléatoire et le
+dessin des sprites ; les helpers arithmétiques de remplacement ont été retirés.
 
 ## Constat non transformé en issue
 

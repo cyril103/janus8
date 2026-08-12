@@ -1,19 +1,25 @@
 # Constats de développement
 
-Constats observés avec le binaire local Janus 0.10.0, sans modification du compilateur.
+Constats initialement observés avec Janus 0.10.0, puis revérifiés après la
+fusion des fonctionnalités correspondantes dans `janus/main`.
 
-## Littéraux hexadécimaux
+## Littéraux hexadécimaux et binaires — résolu
 
-- Repro : employer `uint(0x200)` dans un test.
-- Résultat : `expected ')', found identifier`.
-- Impact : faible ; les sources utilisent des constantes décimales.
+- Ancienne reproduction : employer `uint(0x200)` dans un test produisait
+  `expected ')', found identifier`.
+- Résultat actuel : Janus accepte `0x`, `0b` et les séparateurs `_` ; Janus8 les
+  utilise pour les opcodes, adresses, masques, fontes et sprites.
+- Suivi : Janus #205 est fermée et la fonctionnalité est adoptée ici.
 
-## Opérateurs bit-à-bit
+## Opérateurs bit-à-bit — résolu
 
-- Repro : employer `left | right`.
-- Résultat : `[JLEX0001] unexpected character '|'`.
-- Impact : faible pour ce projet ; les opérations CHIP-8 sont implémentées par
-  division/modulo dans des fonctions dédiées.
+- Ancienne reproduction : employer `left | right` produisait
+  `[JLEX0001] unexpected character '|'`.
+- Résultat actuel : Janus accepte `&`, `|`, `^`, `<<` et `>>` ; Janus8 les
+  emploie directement pour le décodage, les instructions logiques, les shifts,
+  le RNG et le dessin des sprites.
+- Suivi : Janus #206 est fermée et la fonctionnalité est adoptée ici ; les
+  anciens helpers arithmétiques ont été supprimés.
 
 ## Conversion de `byte`
 
@@ -22,6 +28,6 @@ Constats observés avec le binaire local Janus 0.10.0, sans modification du comp
   normalisé explicitement vers 0…255.
 - Impact : moyen sans précaution, nul après centralisation dans `unsignedByte`.
 
-Ces comportements sont consignés comme caractéristiques observées, pas comme
-failles du langage. Les deux lacunes de syntaxe ont été qualifiées en propositions
-et sont suivies dans [`ISSUE_CANDIDATES.md`](ISSUE_CANDIDATES.md).
+La conversion signée reste consignée comme caractéristique observée, pas comme
+faille du langage. L'historique et le statut des deux propositions de syntaxe
+figurent dans [`ISSUE_CANDIDATES.md`](ISSUE_CANDIDATES.md).

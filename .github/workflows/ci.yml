@@ -24,4 +24,5 @@ jobs:
           janus check --all --deny-warnings
           janus test --fail-if-empty
           janus build
+          tests/native_syntax.sh
           tests/smoke.sh
