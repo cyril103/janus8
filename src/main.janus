@@ -1,0 +1,4 @@
+def main() : int {
+    println("Hello from Janus!")
+    return 0
+}
