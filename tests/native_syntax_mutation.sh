@@ -133,4 +133,32 @@ if ! cmp -s "$expected" "$diagnostic"; then
   exit 1
 fi
 
+cp "$root/src/chip8/core.janus" "$work/src/chip8/core.janus"
+python3 - "$work/src/chip8/core.janus" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+source = path.read_text()
+anchor = "\n        if family == uint(0x8) {"
+interceptor = (
+    "\n        if family == uint(0x8) { "
+    "return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode) }"
+)
+if source.count(anchor) != 1:
+    raise SystemExit("canonical 8XY family branch not found exactly once")
+path.write_text(source.replace(anchor, interceptor + anchor))
+PY
+
+printf '%s\n' 'duplicate opcode family branch: uint(8)' >"$expected"
+if "$work/tests/native_syntax.sh" >"$diagnostic" 2>&1; then
+  echo "native syntax gate accepted an intercepting 8XY family branch" >&2
+  exit 1
+fi
+if ! cmp -s "$expected" "$diagnostic"; then
+  echo "native syntax gate rejected the family interceptor for the wrong reason:" >&2
+  cat "$diagnostic" >&2
+  exit 1
+fi
+
 echo "native syntax mutations: rejected"
