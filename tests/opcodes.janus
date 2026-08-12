@@ -87,6 +87,17 @@ def timersIndexRandomAndKeyWait() : Unit {
 }
 
 /// @test
+def timersDecrementAcrossSignedByteBoundary() : Unit {
+    val machine : Machine = new Machine(usize(124))
+    defer delete machine
+    opcode(machine, uint(24704))
+    opcode(machine, uint(61461))
+    run(machine, usize(2))
+    machine.tickTimers()
+    assertEqual[uint](machine.delayTimerUnsigned(), uint(127))
+}
+
+/// @test
 def bcdAndRegisterStoreLoad() : Unit {
     val machine : Machine = new Machine(usize(5))
     defer delete machine

@@ -241,8 +241,12 @@ class Machine(seed : usize) {
     }
 
     def tickTimers() : Unit {
-        if delay > byte(0) { delay = delay - byte(1) }
-        if sound > byte(0) { sound = sound - byte(1) }
+        if unsignedByte(delay) > uint(0) {
+            delay = truncatingCast[byte](unsignedByte(delay) - uint(1))
+        }
+        if unsignedByte(sound) > uint(0) {
+            sound = truncatingCast[byte](unsignedByte(sound) - uint(1))
+        }
     }
 
     private def nextRandomByte() : byte {
