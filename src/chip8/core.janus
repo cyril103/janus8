@@ -337,8 +337,19 @@ class Machine(seed : usize) {
         }
         if family == uint(14) {
             val low : uint = opcode % uint(256)
-            if low == uint(158) { this.skipIf(keys.get(usize(unsignedByte(registers.get(x))) % usize(16))) return Result.Ok[bool, Chip8Error](true) }
-            if low == uint(161) { this.skipIf(!keys.get(usize(unsignedByte(registers.get(x))) % usize(16))) return Result.Ok[bool, Chip8Error](true) }
+            val key : uint = unsignedByte(registers.get(x))
+            if low == uint(158) || low == uint(161) {
+                if key >= uint(16) {
+                    return Result.Error[bool, Chip8Error](Chip8Error.InvalidRegister)
+                }
+                if low == uint(158) {
+                    this.skipIf(keys.get(usize(key)))
+                }
+                else {
+                    this.skipIf(!keys.get(usize(key)))
+                }
+                return Result.Ok[bool, Chip8Error](true)
+            }
         }
         if family == uint(15) {
             val low : uint = opcode % uint(256)

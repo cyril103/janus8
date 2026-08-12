@@ -98,6 +98,23 @@ def timersDecrementAcrossSignedByteBoundary() : Unit {
 }
 
 /// @test
+def keyOpcodesRejectValuesOutsideChip8Keypad() : Unit {
+    val pressedMachine : Machine = new Machine(usize(125))
+    defer delete pressedMachine
+    opcode(pressedMachine, uint(24831))
+    opcode(pressedMachine, uint(57502))
+    run(pressedMachine, usize(1))
+    assertError[bool, Chip8Error](pressedMachine.step())
+
+    val releasedMachine : Machine = new Machine(usize(126))
+    defer delete releasedMachine
+    opcode(releasedMachine, uint(24831))
+    opcode(releasedMachine, uint(57505))
+    run(releasedMachine, usize(1))
+    assertError[bool, Chip8Error](releasedMachine.step())
+}
+
+/// @test
 def bcdAndRegisterStoreLoad() : Unit {
     val machine : Machine = new Machine(usize(5))
     defer delete machine
