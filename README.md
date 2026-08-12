@@ -56,9 +56,8 @@ Tout autre encodage retourne `UnsupportedOpcode`. Le dessin reboucle aux bords.
 Pas d'affichage interactif, de son ni de cadence 60 Hz : les timers ne sont
 décrémentés que par appel explicite du cœur. Le CLI headless n'injecte pas de
 touches. Les quirks historiques ne sont pas configurables : les shifts utilisent
-VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI fournie n'a pas
-été exécutée sur GitHub dans ce dépôt local ; elle utilise l'installateur officiel
-et vérifie explicitement la version 0.10.0.
+VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI utilise
+l'installateur officiel et vérifie explicitement la version 0.10.0.
 
 ## Licence
 

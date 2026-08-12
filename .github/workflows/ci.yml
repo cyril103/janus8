@@ -10,6 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Installer Janus avec l'installateur officiel
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           curl --proto '=https' --tlsv1.2 -fsSL \
             https://raw.githubusercontent.com/cyril103/janus/main/scripts/install.sh | sh
