@@ -8,7 +8,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     env:
-      JANUS_REVISION: 8ba74a5f9fd9a5900f4f60347b8aceca73ebe570
+      JANUS_REVISION: f4ef967ef22dda7a3b4c50d7daad3a46cb200562
     steps:
       - uses: actions/checkout@v4
       - name: Extraire la révision Janus testée

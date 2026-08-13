@@ -18,22 +18,9 @@ private def unsignedByte(value : byte) : uint {
     return truncatingCast[uint](signed)
 }
 
-private def zeroBytes(size : usize) : Array[byte] {
-    val result : Array[byte] = new Array[byte](size)
-    var cursor : usize = usize(0)
-    while cursor < size { result.push(byte(0)) cursor = cursor + usize(1) }
-    return move result
-}
-
-private def zeroBools(size : usize) : Array[bool] {
-    val result : Array[bool] = new Array[bool](size)
-    var cursor : usize = usize(0)
-    while cursor < size { result.push(false) cursor = cursor + usize(1) }
-    return move result
-}
-
 private def initialMemory() : Array[byte] {
-    val result : Array[byte] = zeroBytes(usize(4096))
+    val result : Array[byte] =
+    filledArray[byte](usize(4096), byte(0))
     result.set(usize(0x50), byte(0b1111_0000))
     result.set(usize(0x51), byte(0b1001_0000))
     result.set(usize(0x52), byte(0b1001_0000))
@@ -119,10 +106,13 @@ private def initialMemory() : Array[byte] {
 
 class Machine(seed : usize) {
     private val memory : Array[byte] = initialMemory()
-    private val registers : Array[byte] = zeroBytes(usize(16))
+    private val registers : Array[byte] =
+    filledArray[byte](usize(16), byte(0))
     private val stack : Array[uint] = new Array[uint](usize(16))
-    private val pixels : Array[bool] = zeroBools(usize(2048))
-    private val keys : Array[bool] = zeroBools(usize(16))
+    private val pixels : Array[bool] =
+    filledArray[bool](usize(2048), false)
+    private val keys : Array[bool] =
+    filledArray[bool](usize(16), false)
     private var indexRegister : uint = uint(0)
     private var pc : uint = uint(512)
     private var delay : byte = byte(0)
