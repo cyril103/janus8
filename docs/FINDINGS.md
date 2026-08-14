@@ -1,7 +1,7 @@
 # Constats de développement
 
-Constats initialement observés avec Janus 0.10.0, puis revérifiés après la
-fusion des fonctionnalités correspondantes dans `janus/main`.
+Constats initialement observés avec Janus 0.10.0, puis revérifiés et adoptés
+avec la release Janus 0.11.1.
 
 ## Littéraux hexadécimaux et binaires — résolu
 
@@ -28,6 +28,23 @@ fusion des fonctionnalités correspondantes dans `janus/main`.
   normalisé explicitement vers 0…255.
 - Impact : moyen sans précaution, nul après centralisation dans `unsignedByte`.
 
+## Décodage par motifs littéraux — résolu
+
+- Ancienne forme : la famille `8XYN` utilisait une chaîne de comparaisons
+  `if`/`else if` sur le dernier nibble.
+- Résultat actuel : Janus8 utilise un `match` exhaustif sur les sous-opcodes
+  littéraux et un wildcard explicite pour les encodages non pris en charge.
+- Suivi : Janus #210 est fermée et la fonctionnalité est adoptée ici.
+
+## Données binaires déclaratives — résolu
+
+- Ancienne forme : les 80 octets de la fonte CHIP-8 étaient installés par 80
+  appels `set` indépendants.
+- Résultat actuel : la fonte est un littéral `Array[byte]` typé, puis copiée
+  vers sa plage mémoire réservée.
+- Suivi : Janus #214 est fermée et la fonctionnalité est adoptée ici. Les
+  fabriques de Janus #215 restent utilisées pour les grands tableaux remplis.
+
 La conversion signée reste consignée comme caractéristique observée, pas comme
-faille du langage. L'historique et le statut des deux propositions de syntaxe
-figurent dans [`ISSUE_CANDIDATES.md`](ISSUE_CANDIDATES.md).
+faille du langage. L'historique des fonctionnalités issues de ce banc d'essai
+figure dans [`ISSUE_CANDIDATES.md`](ISSUE_CANDIDATES.md).

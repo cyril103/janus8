@@ -4,37 +4,52 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   linux:
     runs-on: ubuntu-latest
     env:
-      JANUS_REVISION: f4ef967ef22dda7a3b4c50d7daad3a46cb200562
+      JANUS_VERSION: 0.11.1
+      JANUS_REVISION: 053bb183818cf6551accf9abeb90448d9d4de5cb
+      JANUS_ARCHIVE_SHA256: e004174530dbfb809cd2c36f963af9fc1f17aac1d6ec31d6c112de5c5f24c258
     steps:
-      - uses: actions/checkout@v4
-      - name: Extraire la révision Janus testée
-        uses: actions/checkout@v4
-        with:
-          repository: cyril103/janus
-          ref: ${{ env.JANUS_REVISION }}
-          path: .janus-source
-      - name: Construire Janus avec les fonctionnalités requises
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Installer la release Janus vérifiée
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes clang-18 lld-18 llvm-18-dev ninja-build
-          export PATH="/usr/lib/llvm-18/bin:$PATH"
-          cmake -S .janus-source -B .janus-source/build -G Ninja \
-            -DBUILD_TESTING=OFF \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_COMPILER=clang-18 \
-            -DCMAKE_CXX_COMPILER=clang++-18 \
-            -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm
-          cmake --build .janus-source/build --target janus --parallel
-          echo "/usr/lib/llvm-18/bin" >> "$GITHUB_PATH"
-          echo "$GITHUB_WORKSPACE/.janus-source/build" >> "$GITHUB_PATH"
+          archive="janus-${JANUS_VERSION}-Linux-x86_64.tar.gz"
+          curl --fail --location --retry 3 --output "$archive" \
+            "https://github.com/cyril103/janus/releases/download/v${JANUS_VERSION}/${archive}"
+          printf '%s  %s\n' "$JANUS_ARCHIVE_SHA256" "$archive" | sha256sum --check --strict
+          mkdir .janus-toolchain
+          tar -xzf "$archive" -C .janus-toolchain --strip-components=1
+          echo "$GITHUB_WORKSPACE/.janus-toolchain/bin" >> "$GITHUB_PATH"
       - name: Vérifier la provenance du compilateur
         run: |
-          test "$(git -C .janus-source rev-parse HEAD)" = "$JANUS_REVISION"
-          test "$(janus --version)" = "janus 0.10.0"
+          janus --version --json > janus-identity.json
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          identity = json.loads(Path("janus-identity.json").read_text())
+          expected = {
+              "schema_version": 1,
+              "version": os.environ["JANUS_VERSION"],
+              "revision": os.environ["JANUS_REVISION"],
+              "dirty": False,
+              "channel": "package",
+              "target": "x86_64-Linux",
+          }
+          for field, value in expected.items():
+              actual = identity.get(field)
+              if actual != value:
+                  raise SystemExit(
+                      f"unexpected Janus identity field {field}: {actual!r} != {value!r}"
+                  )
+          print(f"Janus release verified: {identity['identity']}")
+          PY
       - name: Valider
         run: |
           janus fmt --check

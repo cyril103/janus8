@@ -124,39 +124,84 @@ def require_family_dispatch(core: str) -> None:
 
 
 def require_8xy_dispatch(core: str) -> None:
-    body = braced_body(
+    family_body = braced_body(
         core,
         r"if\s+family\s*==\s*uint\(0x8\)\s*\{",
-        "8XY dispatch block",
+        "8XY family block",
+    )
+    body = braced_body(
+        family_body,
+        r"match\s+sub\s*\{",
+        "8XY literal match inside the 8XY family block",
     )
     branch_literals = re.findall(
-        r"(?:if|else\s+if)\s+sub\s*==\s*uint\((0[xX][0-9a-fA-F_]+|0[bB][01_]+|[0-9][0-9_]*)\)",
+        r"uint\((0[xX][0-9a-fA-F_]+|0[bB][01_]+|[0-9][0-9_]*)\)\s*=>",
         body,
     )
     branches = [integer_literal(value) for value in branch_literals]
     expected = [0, 1, 2, 3, 4, 5, 6, 7, 14]
     for value in sorted(set(branches)):
         if branches.count(value) > 1:
-            raise ValueError(f"duplicate opcode sub-branch: uint({value})")
+            raise ValueError(f"duplicate opcode sub-pattern: uint({value})")
     if branches != expected:
-        raise ValueError(f"unexpected 8XY dispatch sequence: {branches}")
+        raise ValueError(f"unexpected 8XY literal pattern sequence: {branches}")
+    require(body, "8XY wildcard fallback", r"_\s*=>\s*false")
 
-    native_branches = (
-        (
-            "8XY1 native OR branch",
-            r"else\s+if\s+sub\s*==\s*uint\(1\)\s*\{\s*registers\.set\(x,\s*vx\s*\|\s*vy\)\s*\}",
-        ),
-        (
-            "8XY2 native AND branch",
-            r"else\s+if\s+sub\s*==\s*uint\(2\)\s*\{\s*registers\.set\(x,\s*vx\s*&\s*vy\)\s*\}",
-        ),
-        (
-            "8XY3 native XOR branch",
-            r"else\s+if\s+sub\s*==\s*uint\(3\)\s*\{\s*registers\.set\(x,\s*vx\s*\^\s*vy\)\s*\}",
-        ),
+    native_patterns = (
+        ("8XY0 assignment pattern", r"uint\(0\)\s*=>\s*this\.set8xy\(x,\s*vy\)"),
+        ("8XY1 native OR pattern", r"uint\(1\)\s*=>\s*this\.set8xy\(x,\s*vx\s*\|\s*vy\)"),
+        ("8XY2 native AND pattern", r"uint\(2\)\s*=>\s*this\.set8xy\(x,\s*vx\s*&\s*vy\)"),
+        ("8XY3 native XOR pattern", r"uint\(3\)\s*=>\s*this\.set8xy\(x,\s*vx\s*\^\s*vy\)"),
+        ("8XY4 addition pattern", r"uint\(4\)\s*=>\s*this\.add8xy\(x,\s*vx,\s*vy\)"),
+        ("8XY5 subtraction pattern", r"uint\(5\)\s*=>\s*this\.subtract8xy\(x,\s*vx,\s*vy\)"),
+        ("8XY6 right-shift pattern", r"uint\(6\)\s*=>\s*this\.shiftRight8xy\(x,\s*vx\)"),
+        ("8XY7 reverse-subtraction pattern", r"uint\(7\)\s*=>\s*this\.subtract8xy\(x,\s*vy,\s*vx\)"),
+        ("8XYE left-shift pattern", r"uint\(14\)\s*=>\s*this\.shiftLeft8xy\(x,\s*vx\)"),
     )
-    for description, pattern in native_branches:
+    for description, pattern in native_patterns:
         require(body, description, pattern)
+
+
+def require_font_literal(core: str) -> None:
+    body = braced_body(
+        core,
+        r"private\s+def\s+initialMemory\s*\([^)]*\)\s*:\s*Array\[byte\]\s*\{",
+        "initialMemory function",
+    )
+    literal = re.search(
+        r"val\s+font\s*:\s*Array\[byte\]\s*=\s*\[(.*?)\]",
+        body,
+        re.DOTALL,
+    )
+    if literal is None:
+        raise ValueError("missing native syntax: CHIP-8 font typed array literal")
+    spellings = re.findall(r"byte\(0b([01_]+)\)", literal.group(1))
+    values = [int(value.replace("_", ""), 2) for value in spellings]
+    expected = [
+        0xF0, 0x90, 0x90, 0x90, 0xF0, 0x20, 0x60, 0x20, 0x20, 0x70,
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, 0xF0, 0x10, 0xF0, 0x10, 0xF0,
+        0x90, 0x90, 0xF0, 0x10, 0x10, 0xF0, 0x80, 0xF0, 0x10, 0xF0,
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, 0xF0, 0x10, 0x20, 0x40, 0x40,
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, 0xF0, 0x90, 0xF0, 0x10, 0xF0,
+        0xF0, 0x90, 0xF0, 0x90, 0x90, 0xE0, 0x90, 0xE0, 0x90, 0xE0,
+        0xF0, 0x80, 0x80, 0x80, 0xF0, 0xE0, 0x90, 0x90, 0x90, 0xE0,
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, 0xF0, 0x80, 0xF0, 0x80, 0x80,
+    ]
+    if len(values) != len(expected):
+        raise ValueError(f"unexpected CHIP-8 font length: {len(values)} (expected 80)")
+    for index, (actual, wanted) in enumerate(zip(values, expected)):
+        if actual != wanted:
+            raise ValueError(
+                f"unexpected CHIP-8 font byte at index {index}: 0x{actual:02X} (expected 0x{wanted:02X})"
+            )
+    require(body, "font cleanup", r"\bdefer\s+delete\s+font\b")
+    require(
+        body,
+        "font copy range",
+        r"while\s+offset\s*<\s*font\.size\(\)\s*\{\s*"
+        r"result\.set\(usize\(0x50\)\s*\+\s*offset,\s*font\.get\(offset\)\)\s*"
+        r"offset\s*=\s*offset\s*\+\s*usize\(1\)\s*\}",
+    )
 
 
 def main() -> int:
@@ -177,14 +222,15 @@ def main() -> int:
         ("Y nibble extraction", r"\(opcode\s*>>\s*usize\(4\)\)\s*&\s*uint\(0xF\)"),
         ("byte mask", r"\bopcode\s*&\s*uint\(0xFF\)"),
         ("address mask", r"\bopcode\s*&\s*uint\(0xFFF\)"),
-        ("logical right shift", r"unsignedByte\(vx\)\s*>>\s*usize\(1\)"),
-        ("left shift", r"unsignedByte\(vx\)\s*<<\s*usize\(1\)"),
+        ("logical right shift", r"unsignedByte\(value\)\s*>>\s*usize\(1\)"),
+        ("left shift", r"unsignedByte\(value\)\s*<<\s*usize\(1\)"),
         ("sprite bit mask", r"uint\(0x80\)\s*>>\s*column"),
     )
     for description, pattern in requirements:
         require(core, description, pattern)
     require_family_dispatch(core)
     require_8xy_dispatch(core)
+    require_font_literal(core)
 
     require(core_tests, "hexadecimal core opcode", r"\buint\(0x60FE\)")
     require(opcode_tests, "hexadecimal sprite opcode", r"\buint\(0xA20A\)")
