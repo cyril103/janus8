@@ -13,6 +13,74 @@ private def run(machine : Machine, count : usize) : Unit {
     }
 }
 
+private def assert8xyCase(
+x : uint,
+y : uint,
+left : uint,
+right : uint,
+sub : uint,
+expectedResult : uint,
+expectedFlag : uint
+) : Unit {
+    val machine : Machine = new Machine(usize(2))
+    defer delete machine
+    opcode(machine, uint(0x6000) | (x << usize(8)) | left)
+    opcode(machine, uint(0x6000) | (y << usize(8)) | right)
+    opcode(machine, uint(0x8000) | (x << usize(8)) | (y << usize(4)) | sub)
+    run(machine, usize(3))
+    assertEqual[uint](machine.registerUnsigned(usize(x)), expectedResult)
+    assertEqual[uint](machine.registerUnsigned(usize(15)), expectedFlag)
+}
+
+/// @test
+def literalMatchPreservesEvery8xyOperationAndFlag() : Unit {
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(0), uint(0x03), uint(0))
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(1), uint(0x83), uint(0))
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(2), uint(0x01), uint(0))
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(3), uint(0x82), uint(0))
+    assert8xyCase(uint(0), uint(1), uint(0xFE), uint(0x05), uint(4), uint(0x03), uint(1))
+    assert8xyCase(uint(0), uint(1), uint(0x03), uint(0x05), uint(5), uint(0xFE), uint(0))
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(6), uint(0x40), uint(1))
+    assert8xyCase(uint(0), uint(1), uint(0x03), uint(0x05), uint(7), uint(0x02), uint(1))
+    assert8xyCase(uint(0), uint(1), uint(0x81), uint(0x03), uint(14), uint(0x02), uint(1))
+
+    assert8xyCase(uint(15), uint(0), uint(0xFE), uint(0x05), uint(4), uint(1), uint(1))
+    assert8xyCase(uint(15), uint(0), uint(0x03), uint(0x05), uint(5), uint(0xFE), uint(0xFE))
+    assert8xyCase(uint(15), uint(0), uint(0x81), uint(0x03), uint(6), uint(0x40), uint(0x40))
+    assert8xyCase(uint(15), uint(0), uint(0x03), uint(0x05), uint(7), uint(0x02), uint(0x02))
+    assert8xyCase(uint(15), uint(0), uint(0x81), uint(0x03), uint(14), uint(0x02), uint(0x02))
+}
+
+/// @test
+def typedFontLiteralCopiesEveryCanonicalByte() : Unit {
+    val expected : Array[byte] = [
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b0010_0000), byte(0b0110_0000), byte(0b0010_0000), byte(0b0010_0000), byte(0b0111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1001_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b0001_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b0010_0000), byte(0b0100_0000), byte(0b0100_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1001_0000),
+        byte(0b1110_0000), byte(0b1001_0000), byte(0b1110_0000), byte(0b1001_0000), byte(0b1110_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1000_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1110_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1110_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1000_0000)
+    ]
+    defer delete expected
+    val machine : Machine = new Machine(usize(2))
+    defer delete machine
+    var offset : usize = usize(0)
+    while offset < expected.size() {
+        assertEqual[byte](machine.memoryByte(usize(0x50) + offset), expected.get(offset))
+        offset = offset + usize(1)
+    }
+}
+
 /// @test
 def skipsAndJumps() : Unit {
     val machine : Machine = new Machine(usize(3))

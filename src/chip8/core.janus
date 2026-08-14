@@ -21,86 +21,30 @@ private def unsignedByte(value : byte) : uint {
 private def initialMemory() : Array[byte] {
     val result : Array[byte] =
     filledArray[byte](usize(4096), byte(0))
-    result.set(usize(0x50), byte(0b1111_0000))
-    result.set(usize(0x51), byte(0b1001_0000))
-    result.set(usize(0x52), byte(0b1001_0000))
-    result.set(usize(0x53), byte(0b1001_0000))
-    result.set(usize(0x54), byte(0b1111_0000))
-    result.set(usize(0x55), byte(0b0010_0000))
-    result.set(usize(0x56), byte(0b0110_0000))
-    result.set(usize(0x57), byte(0b0010_0000))
-    result.set(usize(0x58), byte(0b0010_0000))
-    result.set(usize(0x59), byte(0b0111_0000))
-    result.set(usize(0x5A), byte(0b1111_0000))
-    result.set(usize(0x5B), byte(0b0001_0000))
-    result.set(usize(0x5C), byte(0b1111_0000))
-    result.set(usize(0x5D), byte(0b1000_0000))
-    result.set(usize(0x5E), byte(0b1111_0000))
-    result.set(usize(0x5F), byte(0b1111_0000))
-    result.set(usize(0x60), byte(0b0001_0000))
-    result.set(usize(0x61), byte(0b1111_0000))
-    result.set(usize(0x62), byte(0b0001_0000))
-    result.set(usize(0x63), byte(0b1111_0000))
-    result.set(usize(0x64), byte(0b1001_0000))
-    result.set(usize(0x65), byte(0b1001_0000))
-    result.set(usize(0x66), byte(0b1111_0000))
-    result.set(usize(0x67), byte(0b0001_0000))
-    result.set(usize(0x68), byte(0b0001_0000))
-    result.set(usize(0x69), byte(0b1111_0000))
-    result.set(usize(0x6A), byte(0b1000_0000))
-    result.set(usize(0x6B), byte(0b1111_0000))
-    result.set(usize(0x6C), byte(0b0001_0000))
-    result.set(usize(0x6D), byte(0b1111_0000))
-    result.set(usize(0x6E), byte(0b1111_0000))
-    result.set(usize(0x6F), byte(0b1000_0000))
-    result.set(usize(0x70), byte(0b1111_0000))
-    result.set(usize(0x71), byte(0b1001_0000))
-    result.set(usize(0x72), byte(0b1111_0000))
-    result.set(usize(0x73), byte(0b1111_0000))
-    result.set(usize(0x74), byte(0b0001_0000))
-    result.set(usize(0x75), byte(0b0010_0000))
-    result.set(usize(0x76), byte(0b0100_0000))
-    result.set(usize(0x77), byte(0b0100_0000))
-    result.set(usize(0x78), byte(0b1111_0000))
-    result.set(usize(0x79), byte(0b1001_0000))
-    result.set(usize(0x7A), byte(0b1111_0000))
-    result.set(usize(0x7B), byte(0b1001_0000))
-    result.set(usize(0x7C), byte(0b1111_0000))
-    result.set(usize(0x7D), byte(0b1111_0000))
-    result.set(usize(0x7E), byte(0b1001_0000))
-    result.set(usize(0x7F), byte(0b1111_0000))
-    result.set(usize(0x80), byte(0b0001_0000))
-    result.set(usize(0x81), byte(0b1111_0000))
-    result.set(usize(0x82), byte(0b1111_0000))
-    result.set(usize(0x83), byte(0b1001_0000))
-    result.set(usize(0x84), byte(0b1111_0000))
-    result.set(usize(0x85), byte(0b1001_0000))
-    result.set(usize(0x86), byte(0b1001_0000))
-    result.set(usize(0x87), byte(0b1110_0000))
-    result.set(usize(0x88), byte(0b1001_0000))
-    result.set(usize(0x89), byte(0b1110_0000))
-    result.set(usize(0x8A), byte(0b1001_0000))
-    result.set(usize(0x8B), byte(0b1110_0000))
-    result.set(usize(0x8C), byte(0b1111_0000))
-    result.set(usize(0x8D), byte(0b1000_0000))
-    result.set(usize(0x8E), byte(0b1000_0000))
-    result.set(usize(0x8F), byte(0b1000_0000))
-    result.set(usize(0x90), byte(0b1111_0000))
-    result.set(usize(0x91), byte(0b1110_0000))
-    result.set(usize(0x92), byte(0b1001_0000))
-    result.set(usize(0x93), byte(0b1001_0000))
-    result.set(usize(0x94), byte(0b1001_0000))
-    result.set(usize(0x95), byte(0b1110_0000))
-    result.set(usize(0x96), byte(0b1111_0000))
-    result.set(usize(0x97), byte(0b1000_0000))
-    result.set(usize(0x98), byte(0b1111_0000))
-    result.set(usize(0x99), byte(0b1000_0000))
-    result.set(usize(0x9A), byte(0b1111_0000))
-    result.set(usize(0x9B), byte(0b1111_0000))
-    result.set(usize(0x9C), byte(0b1000_0000))
-    result.set(usize(0x9D), byte(0b1111_0000))
-    result.set(usize(0x9E), byte(0b1000_0000))
-    result.set(usize(0x9F), byte(0b1000_0000))
+    val font : Array[byte] = [
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b0010_0000), byte(0b0110_0000), byte(0b0010_0000), byte(0b0010_0000), byte(0b0111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1001_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b0001_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b0001_0000), byte(0b0010_0000), byte(0b0100_0000), byte(0b0100_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b0001_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1001_0000), byte(0b1111_0000), byte(0b1001_0000), byte(0b1001_0000),
+        byte(0b1110_0000), byte(0b1001_0000), byte(0b1110_0000), byte(0b1001_0000), byte(0b1110_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1000_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1110_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1001_0000), byte(0b1110_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000),
+        byte(0b1111_0000), byte(0b1000_0000), byte(0b1111_0000), byte(0b1000_0000), byte(0b1000_0000)
+    ]
+    defer delete font
+    var offset : usize = usize(0)
+    while offset < font.size() {
+        result.set(usize(0x50) + offset, font.get(offset))
+        offset = offset + usize(1)
+    }
     return move result
 }
 
@@ -218,6 +162,36 @@ class Machine(seed : usize) {
         if condition { pc = pc + uint(2) }
     }
 
+    private def set8xy(index : usize, value : byte) : bool {
+        registers.set(index, value)
+        return true
+    }
+
+    private def add8xy(index : usize, left : byte, right : byte) : bool {
+        val sum : uint = unsignedByte(left) + unsignedByte(right)
+        registers.set(index, truncatingCast[byte](sum % uint(256)))
+        registers.set(usize(15), byte(sum > uint(255)))
+        return true
+    }
+
+    private def subtract8xy(index : usize, left : byte, right : byte) : bool {
+        registers.set(usize(15), byte(unsignedByte(left) >= unsignedByte(right)))
+        registers.set(index, truncatingCast[byte]((unsignedByte(left) + uint(256) - unsignedByte(right)) % uint(256)))
+        return true
+    }
+
+    private def shiftRight8xy(index : usize, value : byte) : bool {
+        registers.set(usize(15), truncatingCast[byte](unsignedByte(value) & uint(0x1)))
+        registers.set(index, truncatingCast[byte](unsignedByte(value) >> usize(1)))
+        return true
+    }
+
+    private def shiftLeft8xy(index : usize, value : byte) : bool {
+        registers.set(usize(15), truncatingCast[byte]((unsignedByte(value) >> usize(7)) & uint(0x1)))
+        registers.set(index, truncatingCast[byte](unsignedByte(value) << usize(1)))
+        return true
+    }
+
     def step() : Result[bool, Chip8Error] {
         if waitingRegister >= 0 { return Result.Ok[bool, Chip8Error](true) }
         if pc > uint(4094) {
@@ -257,17 +231,23 @@ class Machine(seed : usize) {
             val sub : uint = opcode & uint(0xF)
             val vx : byte = registers.get(x)
             val vy : byte = registers.get(y)
-            if sub == uint(0) { registers.set(x, vy) }
-            else if sub == uint(1) { registers.set(x, vx | vy) }
-            else if sub == uint(2) { registers.set(x, vx & vy) }
-            else if sub == uint(3) { registers.set(x, vx ^ vy) }
-            else if sub == uint(4) { val sum : uint = unsignedByte(vx) + unsignedByte(vy) registers.set(x, truncatingCast[byte](sum % uint(256))) registers.set(usize(15), byte(sum > uint(255))) }
-            else if sub == uint(5) { registers.set(usize(15), byte(unsignedByte(vx) >= unsignedByte(vy))) registers.set(x, truncatingCast[byte]((unsignedByte(vx) + uint(256) - unsignedByte(vy)) % uint(256))) }
-            else if sub == uint(6) { registers.set(usize(15), truncatingCast[byte](unsignedByte(vx) & uint(0x1))) registers.set(x, truncatingCast[byte](unsignedByte(vx) >> usize(1))) }
-            else if sub == uint(7) { registers.set(usize(15), byte(unsignedByte(vy) >= unsignedByte(vx))) registers.set(x, truncatingCast[byte]((unsignedByte(vy) + uint(256) - unsignedByte(vx)) % uint(256))) }
-            else if sub == uint(14) { registers.set(usize(15), truncatingCast[byte]((unsignedByte(vx) >> usize(7)) & uint(0x1))) registers.set(x, truncatingCast[byte](unsignedByte(vx) << usize(1))) }
-            else { return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode) }
-            pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true)
+            val supported : bool = match sub {
+                uint(0) => this.set8xy(x, vy),
+                uint(1) => this.set8xy(x, vx | vy),
+                uint(2) => this.set8xy(x, vx & vy),
+                uint(3) => this.set8xy(x, vx ^ vy),
+                uint(4) => this.add8xy(x, vx, vy),
+                uint(5) => this.subtract8xy(x, vx, vy),
+                uint(6) => this.shiftRight8xy(x, vx),
+                uint(7) => this.subtract8xy(x, vy, vx),
+                uint(14) => this.shiftLeft8xy(x, vx),
+                _ => false
+            }
+            if !supported {
+                return Result.Error[bool, Chip8Error](Chip8Error.UnsupportedOpcode)
+            }
+            pc = pc + uint(2)
+            return Result.Ok[bool, Chip8Error](true)
         }
         if family == uint(0x9) && (opcode & uint(0xF)) == uint(0) { this.skipIf(registers.get(x) != registers.get(y)) return Result.Ok[bool, Chip8Error](true) }
         if family == uint(0xA) { indexRegister = nnn pc = pc + uint(2) return Result.Ok[bool, Chip8Error](true) }

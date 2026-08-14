@@ -1,6 +1,6 @@
 # Janus8
 
-Janus8 est un émulateur CHIP-8 headless écrit entièrement en Janus 0.10.0.
+Janus8 est un émulateur CHIP-8 headless écrit entièrement en Janus 0.11.1.
 Ce premier jalon charge une ROM binaire, exécute un nombre borné de cycles et
 peut produire une trace et un état final déterministes.
 
@@ -50,6 +50,8 @@ Tout autre encodage retourne `UnsupportedOpcode`. Le dessin reboucle aux bords.
 | `Result`/`Option` | erreurs d'exécution, fichiers et arguments |
 | `Array` | mémoire, registres, pile, touches et pixels |
 | `filledArray` | initialisation compacte de la mémoire, des registres, des touches et des pixels |
+| littéraux de tableaux typés | fonte CHIP-8 déclarative, copiée vers la mémoire au démarrage |
+| motifs littéraux de `match` | décodage exhaustif des sous-opcodes `8XYN` avec fallback explicite |
 | littéraux `0x`/`0b` | opcodes, adresses, masques, fonte et sprites lisibles |
 | opérateurs bit à bit et décalages | décodage, logique, shifts, RNG et dessin natifs |
 | ownership/destructeurs | libération déterministe des tableaux et fichiers |
@@ -61,10 +63,10 @@ Tout autre encodage retourne `UnsupportedOpcode`. Le dessin reboucle aux bords.
 Pas d'affichage interactif, de son ni de cadence 60 Hz : les timers ne sont
 décrémentés que par appel explicite du cœur. Le CLI headless n'injecte pas de
 touches. Les quirks historiques ne sont pas configurables : les shifts utilisent
-VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI construit
-la révision Janus `f4ef967ef22dda7a3b4c50d7daad3a46cb200562`, qui contient notamment les
-chaîne de version reste `0.10.0`, mais les paquets de la release `v0.10.0` leur
-sont antérieurs. Elle vérifie aussi que Janus8 conserve cette syntaxe native.
+VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI consomme
+l'archive Linux officielle de Janus `v0.11.1`, vérifie son SHA-256 puis contrôle
+l'identité structurée du compilateur (version, révision, canal, cible et état
+propre). Elle vérifie aussi que Janus8 conserve les syntaxes natives adoptées.
 
 ## Licence
 
