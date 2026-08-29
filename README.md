@@ -1,6 +1,6 @@
 # Janus8
 
-Janus8 est un émulateur CHIP-8 headless écrit entièrement en Janus 0.11.1.
+Janus8 est un émulateur CHIP-8 headless écrit entièrement en Janus 0.22.0.
 Ce premier jalon charge une ROM binaire, exécute un nombre borné de cycles et
 peut produire une trace et un état final déterministes.
 
@@ -64,9 +64,10 @@ Pas d'affichage interactif, de son ni de cadence 60 Hz : les timers ne sont
 décrémentés que par appel explicite du cœur. Le CLI headless n'injecte pas de
 touches. Les quirks historiques ne sont pas configurables : les shifts utilisent
 VX, `FX55/FX65` ne modifient pas I, et le dessin wrappe. La CI consomme
-l'archive Linux officielle de Janus `v0.11.1`, vérifie son SHA-256 puis contrôle
-l'identité structurée du compilateur (version, révision, canal, cible et état
-propre). Elle vérifie aussi que Janus8 conserve les syntaxes natives adoptées.
+la révision source exacte de Janus 0.22.0, contrôle l'identité structurée du
+compilateur (version, révision, canal, cible et état propre), puis vérifie que
+Janus8 conserve les syntaxes natives adoptées. Le pin source sera remplacé par
+l'archive stable vérifiée dès que la publication 0.22.0 sera terminée.
 
 ## Licence
 

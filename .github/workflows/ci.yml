@@ -11,20 +11,29 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     env:
-      JANUS_VERSION: 0.11.1
-      JANUS_REVISION: 053bb183818cf6551accf9abeb90448d9d4de5cb
-      JANUS_ARCHIVE_SHA256: e004174530dbfb809cd2c36f963af9fc1f17aac1d6ec31d6c112de5c5f24c258
+      JANUS_VERSION: 0.22.0
+      JANUS_REVISION: 63b94894e303fde41a369e7d5c5b113bb8c2b4aa
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Installer la release Janus vérifiée
+      - name: Installer les dépendances Janus
         run: |
-          archive="janus-${JANUS_VERSION}-Linux-x86_64.tar.gz"
-          curl --fail --location --retry 3 --output "$archive" \
-            "https://github.com/cyril103/janus/releases/download/v${JANUS_VERSION}/${archive}"
-          printf '%s  %s\n' "$JANUS_ARCHIVE_SHA256" "$archive" | sha256sum --check --strict
-          mkdir .janus-toolchain
-          tar -xzf "$archive" -C .janus-toolchain --strip-components=1
-          echo "$GITHUB_WORKSPACE/.janus-toolchain/bin" >> "$GITHUB_PATH"
+          sudo apt-get update
+          sudo apt-get install --yes clang-18 lld-18 llvm-18-dev ninja-build
+          echo "/usr/lib/llvm-18/bin" >> "$GITHUB_PATH"
+      - name: Construire le compilateur Janus exact
+        run: |
+          git clone https://github.com/cyril103/janus.git "$RUNNER_TEMP/janus"
+          git -C "$RUNNER_TEMP/janus" checkout "$JANUS_REVISION"
+          cmake -S "$RUNNER_TEMP/janus" -B "$RUNNER_TEMP/janus/build" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang-18 \
+            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm \
+            -DJANUS_CLANG_EXECUTABLE=/usr/lib/llvm-18/bin/clang \
+            -DJANUS_LLD_EXECUTABLE=/usr/lib/llvm-18/bin/ld.lld \
+            -DJANUS_SOURCE_SHA="$JANUS_REVISION"
+          cmake --build "$RUNNER_TEMP/janus/build" --target janus --parallel 2
+          echo "$RUNNER_TEMP/janus/build" >> "$GITHUB_PATH"
       - name: Vérifier la provenance du compilateur
         run: |
           janus --version --json > janus-identity.json
@@ -39,7 +48,7 @@ jobs:
               "version": os.environ["JANUS_VERSION"],
               "revision": os.environ["JANUS_REVISION"],
               "dirty": False,
-              "channel": "package",
+              "channel": "source",
               "target": "x86_64-Linux",
           }
           for field, value in expected.items():
@@ -48,7 +57,7 @@ jobs:
                   raise SystemExit(
                       f"unexpected Janus identity field {field}: {actual!r} != {value!r}"
                   )
-          print(f"Janus release verified: {identity['identity']}")
+          print(f"Janus source revision verified: {identity['identity']}")
           PY
       - name: Valider
         run: |
