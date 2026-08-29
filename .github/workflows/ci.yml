@@ -48,7 +48,7 @@ jobs:
               "version": os.environ["JANUS_VERSION"],
               "revision": os.environ["JANUS_REVISION"],
               "dirty": False,
-              "channel": "source",
+              "channel": "stable",
               "target": "x86_64-Linux",
           }
           for field, value in expected.items():
