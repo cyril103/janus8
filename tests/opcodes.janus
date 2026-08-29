@@ -14,13 +14,13 @@ private def run(machine : Machine, count : usize) : Unit {
 }
 
 private def assert8xyCase(
-x : uint,
-y : uint,
-left : uint,
-right : uint,
-sub : uint,
-expectedResult : uint,
-expectedFlag : uint
+    x : uint,
+    y : uint,
+    left : uint,
+    right : uint,
+    sub : uint,
+    expectedResult : uint,
+    expectedFlag : uint
 ) : Unit {
     val machine : Machine = new Machine(usize(2))
     defer delete machine
