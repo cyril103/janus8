@@ -9,11 +9,11 @@ import std.system
 import std.text
 
 class RunOptions(
-val romPath : string,
-val cycles : usize,
-val trace : bool,
-val dumpPath : string,
-val seed : usize
+    val romPath : string,
+    val cycles : usize,
+    val trace : bool,
+    val dumpPath : string,
+    val seed : usize
 ) {}
 
 def defaultOptions() : RunOptions {
@@ -69,11 +69,11 @@ private def readFailure() : int {
 }
 
 private def executeRom(
-file : FileData,
-cycles : usize,
-trace : bool,
-dumpPath : string,
-seed : usize
+    file : FileData,
+    cycles : usize,
+    trace : bool,
+    dumpPath : string,
+    seed : usize
 ) : int {
     defer delete file
     val machine : Machine = new Machine(seed)
