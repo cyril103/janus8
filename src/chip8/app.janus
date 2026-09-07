@@ -34,7 +34,7 @@ private def parseSize(text : string) : Option[usize] {
     }
 }
 
-private def dumpState(machine : Machine, cycles : usize, path : string) : bool {
+private def dumpState(borrow var machine : Machine, cycles : usize, path : string) : bool {
     val output : TextBuilder = new TextBuilder()
     defer delete output
     output.append("pc=")

@@ -1,11 +1,11 @@
 import chip8.core
 import std.testing
 
-private def opcode(machine : Machine, value : uint) : Unit {
+private def opcode(borrow var machine : Machine, value : uint) : Unit {
     assertOk[bool, Chip8Error](machine.loadOpcode(value))
 }
 
-private def run(machine : Machine, count : usize) : Unit {
+private def run(borrow var machine : Machine, count : usize) : Unit {
     var cursor : usize = usize(0)
     while cursor < count {
         assertOk[bool, Chip8Error](machine.step())
